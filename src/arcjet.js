@@ -29,6 +29,11 @@ export function securityMiddleware() {
     return async (req, res, next) => {
         if (!httpArcjet) return next();
         try {
+            // Bypass bot protection/arcjet altogether if it's localhost
+            if (req.ip === '127.0.0.1' || req.ip === '::1') {
+                return next();
+            }
+
             const decision = await httpArcjet.protect(req);
             if (decision.isDenied()) {
                 if (decision.reason.isRateLimit()) {
@@ -37,7 +42,8 @@ export function securityMiddleware() {
                     })
                 }
                 return res.status(403).json({
-                    error: "Forbidden."
+                    error: "Forbidden.",
+                    reason: decision.reason
                 })
             }
             next();
